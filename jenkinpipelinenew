@@ -1,0 +1,45 @@
+pipeline{
+
+agent any
+
+options {
+  timestamps()
+}
+
+tools {
+maven 'maven3.8.7'
+}
+
+//exequit te build
+stages{
+ stage('checkout code'){
+ steps{git branch: 'development', credentialsId: '67f872df-d87c-4789-8da2-d5044e40ce5d', url: 'https://github.com/eyk-tech-soluctions/maven-web-application.git'
+ }
+ }
+ //it will build
+ stage('build'){
+ steps{
+ sh "mvn clean package" 
+ }
+ }
+ //QA report
+ stage('sonarQube'){
+ steps{ 
+ sh "mvn clean sonar:sonar"
+ }
+ }
+ //stored in repo
+ stage('nexus'){
+ steps{
+ sh "mvn class deploy"
+ }
+ }
+ //deploy in tomcat
+ stage('deploy in Tomcat'){
+ steps{sshagent(['eb2f45e1-68b0-490a-99b8-16e7e904d98e']){
+  sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@172.31.37.92:/opt/apache-tomcat-9.0.71/webapps"
+ }
+ }
+ } 
+ }//stages close
+ }//pipeline close
